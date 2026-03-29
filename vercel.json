@@ -1,1 +1,5 @@
-W
+{
+  "rewrites": [
+    { "source": "/api/mistral", "destination": "/api/chat" }
+  ]
+}
