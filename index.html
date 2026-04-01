@@ -65,6 +65,33 @@ body::before {
   border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .btn-h:hover { border-color: var(--accent); color: var(--accent); }
+#menu-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--dim); font-size: 20px; width: 38px; height: 38px;
+  border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+#menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+#dropdown {
+  display: none; position: absolute; top: 58px; right: 12px;
+  background: #0d0d1c; border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; z-index: 200;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+#dropdown.open { display: block; }
+.dd-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; border-bottom: 1px solid var(--border);
+  color: rgba(255,255,255,0.7); font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 1px; padding: 14px 18px;
+  cursor: pointer; transition: all 0.15s;
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: rgba(155,80,255,0.12); color: var(--accent); }
+.dd-item.danger { color: rgba(255,80,80,0.6); }
+.dd-item.danger:hover { background: rgba(255,80,80,0.08); color: #ff5050; }
 #messages {
   flex: 1; overflow-y: auto;
   padding: 20px 16px;
@@ -133,14 +160,15 @@ body::before {
       <div class="header-status">ENTITY ACTIVE</div>
     </div>
   </div>
-  <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-    <button class="btn-h" onclick="showFacts()">MEMORY</button>
-    <button class="btn-h" onclick="newChat()">NEW CHAT</button>
-    <button class="btn-h" onclick="showConversations()">HISTORY</button>
-    <button class="btn-h" onclick="exportData()">EXPORT</button>
-    <button class="btn-h" id="import-btn">IMPORT</button>
-    <button class="btn-h" id="import-facts-btn">IMPORT FACTS</button>
-    <button class="btn-h" onclick="clearMemory()">FORGET ALL</button>
+  <button id="menu-btn" onclick="toggleMenu()">⋮</button>
+  <div id="dropdown">
+    <button class="dd-item" onclick="menuAction(showFacts)">MEMORY</button>
+    <button class="dd-item" onclick="menuAction(newChat)">NEW CHAT</button>
+    <button class="dd-item" onclick="menuAction(showConversations)">HISTORY</button>
+    <button class="dd-item" onclick="menuAction(exportData)">EXPORT</button>
+    <button class="dd-item" id="import-btn">IMPORT</button>
+    <button class="dd-item" id="import-facts-btn">IMPORT FACTS</button>
+    <button class="dd-item danger" onclick="menuAction(clearMemory)">FORGET ALL</button>
     <input type="file" id="import-input" accept=".json" style="display:none">
     <input type="file" id="import-facts-input" accept=".json" style="display:none">
   </div>
@@ -511,6 +539,14 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 
+function toggleMenu() {
+  document.getElementById('dropdown').classList.toggle('open');
+}
+function menuAction(fn) {
+  document.getElementById('dropdown').classList.remove('open');
+  fn();
+}
+
 // INIT
 if (conversationHistory.length > 0) {
   document.getElementById('intro')?.remove();
@@ -519,10 +555,21 @@ if (conversationHistory.length > 0) {
 }
 runAutoArchive();
 
-document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-input').click());
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('dropdown').classList.remove('open');
+  document.getElementById('import-input').click();
+});
 document.getElementById('import-input').addEventListener('change', importData);
-document.getElementById('import-facts-btn').addEventListener('click', () => document.getElementById('import-facts-input').click());
+document.getElementById('import-facts-btn').addEventListener('click', () => {
+  document.getElementById('dropdown').classList.remove('open');
+  document.getElementById('import-facts-input').click();
+});
 document.getElementById('import-facts-input').addEventListener('change', importFactsOnly);
+document.addEventListener('click', e => {
+  if (!e.target.closest('#menu-btn') && !e.target.closest('#dropdown')) {
+    document.getElementById('dropdown').classList.remove('open');
+  }
+});
 document.getElementById('prompt').addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
