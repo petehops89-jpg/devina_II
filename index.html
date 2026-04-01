@@ -139,8 +139,10 @@ body::before {
     <button class="btn-h" onclick="showConversations()">HISTORY</button>
     <button class="btn-h" onclick="exportData()">EXPORT</button>
     <button class="btn-h" id="import-btn">IMPORT</button>
+    <button class="btn-h" id="import-facts-btn">IMPORT FACTS</button>
     <button class="btn-h" onclick="clearMemory()">FORGET ALL</button>
     <input type="file" id="import-input" accept=".json" style="display:none">
+    <input type="file" id="import-facts-input" accept=".json" style="display:none">
   </div>
 </div>
 
@@ -362,6 +364,27 @@ function importData(event) {
   reader.readAsText(file);
 }
 
+function importFactsOnly(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.facts || !Array.isArray(data.facts)) throw new Error('No facts array found in file.');
+      if (!confirm('Merge ' + data.facts.length + ' facts into memory? Existing conversations will not be affected.')) return;
+      data.facts.forEach(fact => {
+        if (!persistentFacts.some(f => f.toLowerCase() === fact.toLowerCase())) persistentFacts.push(fact);
+      });
+      if (persistentFacts.length > 20) persistentFacts = persistentFacts.slice(-20);
+      saveMemory(persistentFacts);
+      showToast('Imported ' + data.facts.length + ' facts.');
+    } catch (err) { alert('Import failed: ' + err.message); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
 async function extractFacts(userMsg, aiReply) {
   try {
     const res = await callMistral(
@@ -498,6 +521,8 @@ runAutoArchive();
 
 document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-input').click());
 document.getElementById('import-input').addEventListener('change', importData);
+document.getElementById('import-facts-btn').addEventListener('click', () => document.getElementById('import-facts-input').click());
+document.getElementById('import-facts-input').addEventListener('change', importFactsOnly);
 document.getElementById('prompt').addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
